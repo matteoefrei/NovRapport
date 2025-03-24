@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Ouvrir un document existant</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+  <div class="container mt-4">
+    <h1>Ouvrir un document existant</h1>
+    <form method="POST" enctype="multipart/form-data">
+      <div class="form-group">
+        <label>Sélectionnez un fichier DOCX</label>
+        <input type="file" class="form-control-file" name="open_file" accept=".docx" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Ouvrir</button>
+      <a href="/" class="btn btn-secondary">Retour</a>
+    </form>
+  </div>
+</body>
+</html>

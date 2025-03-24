@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Prévisualisation du Rapport</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    body { padding: 20px; }
+    .container { max-width: 900px; }
+    h1 { margin-bottom: 30px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Prévisualisation du Rapport</h1>
+    <div class="card mb-3">
+      <div class="card-body">
+        {{ html_preview | safe }}
+      </div>
+    </div>
+    <a href="{{ url_for('download', filename=doc_filename) }}" class="btn btn-success">Télécharger le DOCX</a>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Retour</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Créateur de Rapports - Édition Simplifiée</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <style>
+    body {
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+    .navbar {
+      background-color: #343a40;
+      margin-bottom: 20px;
+    }
+    .navbar-brand {
+      color: #fff !important;
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+    .navbar a.nav-link {
+      color: #ddd !important;
+    }
+    .container {
+      max-width: 1100px;
+    }
+    .section {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 15px;
+      margin-bottom: 15px;
+      position: relative;
+      background-color: #fff;
+    }
+    .section-header {
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+    }
+    .remove-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+    }
+    .card {
+      margin-bottom: 20px;
+    }
+    .form-check-label {
+      margin-left: 5px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Barre de navigation -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container">
+      <a class="navbar-brand" href="#">Nov'Rapport Web</a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <a href="/reset" class="nav-link">
+              <i class="bi bi-file-earmark-plus"></i> Nouveau rapport
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/open_report" class="nav-link">
+              <i class="bi bi-folder-symlink"></i> Ouvrir un document
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Contenu principal -->
+  <div class="container">
+    <div class="card">
+      <div class="card-body">
+        <h1 class="card-title">Créateur de Rapports</h1>
+        <p class="card-text">
+          Bienvenue dans l’éditeur de rapports. Vous pouvez créer un nouveau rapport ou en ouvrir un déjà existant.
+          Sélectionnez l’endroit où insérer vos éléments (texte, images) et cliquez sur <strong>Enregistrer le rapport</strong>.
+        </p>
+      </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" id="reportForm" class="mb-4">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Paramètres d'insertion</h5>
+          <p class="card-text">
+            Choisissez la ligne globale ou un point d’insertion précis dans le document.
+          </p>
+          <div class="form-group">
+            <label for="global_line_number">
+              <i class="bi bi-list-ol"></i> Insertion globale à partir de la ligne (facultatif)
+            </label>
+            <input type="number" id="global_line_number" name="global_line_number"
+                   class="form-control" placeholder="Ex: 5">
+          </div>
+
+          <!-- Menu déroulant si un document est ouvert -->
+          {% if insertion_options %}
+          <div class="form-group mt-3">
+            <label for="insertion_index">
+              <i class="bi bi-arrow-down-square"></i> Choisissez le point d'insertion
+            </label>
+            <select id="insertion_index" name="insertion_index" class="form-control">
+              {% for option in insertion_options %}
+              <option value="{{ option.index }}" {% if insertion_default is defined and option.index == insertion_default %}selected{% endif %}>
+                Ligne {{ option.index + 1 }} : {{ option.text }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Sections de votre rapport</h5>
+          <p class="card-text">Ajoutez autant de sections texte ou images que nécessaire.</p>
+          <div id="sectionsContainer">
+            <!-- Les sections (texte ou images) seront ajoutées ici -->
+          </div>
+          <div class="mt-3">
+            <button type="button" class="btn btn-outline-primary" onclick="addTextSection()">
+              <i class="bi bi-plus-square-dotted"></i> Ajouter une section texte
+            </button>
+            <button type="button" class="btn btn-outline-success" onclick="addImageSection()">
+              <i class="bi bi-card-image"></i> Ajouter une section images
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-right mt-3">
+        <button type="submit" name="action" value="preview" class="btn btn-info">
+          <i class="bi bi-eye"></i> Prévisualiser
+        </button>
+        <button type="submit" name="action" value="save" class="btn btn-success">
+          <i class="bi bi-save"></i> Enregistrer le rapport
+        </button>
+      </div>
+
+      <!-- Champ caché pour stocker les données JSON des sections -->
+      <input type="hidden" id="formDataField" name="formData" value='{{ formData|safe }}'>
+    </form>
+
+    <hr>
+    <div id="previewSection" class="card">
+      <div class="card-body">
+        <h5 class="card-title">Prévisualisation</h5>
+        <div id="previewContent">
+          {% if preview_html %}
+            <div class="card mb-3">
+              <div class="card-body">
+                {{ preview_html|safe }}
+              </div>
+            </div>
+          {% else %}
+            <p>Aucune prévisualisation disponible.</p>
+          {% endif %}
+        </div>
+        {% if download_link %}
+          <a href="{{ download_link }}" class="btn btn-success mt-3">
+            <i class="bi bi-download"></i> Télécharger le rapport DOCX
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    function removeSection(btn) {
+      const section = btn.closest(".section");
+      section.remove();
+      updateFormData();
+    }
+    
+    function addTextSection(data = {}) {
+      const container = document.getElementById("sectionsContainer");
+      const sectionDiv = document.createElement("div");
+      sectionDiv.className = "section";
+      sectionDiv.innerHTML = `
+        <button type="button" class="btn btn-sm btn-danger remove-btn" onclick="removeSection(this)">
+          <i class="bi bi-x-square"></i> Supprimer
+        </button>
+        <div class="section-header">Section Texte</div>
+        <input type="hidden" name="section_type[]" value="text">
+        <input type="hidden" name="original[]" value="${data.original ? data.original : "false"}">
+        
+        <div class="form-group">
+          <label>Contenu du texte</label>
+          <textarea class="form-control" name="text_content[]" rows="3" placeholder="Entrez le texte" onchange="updateFormData()">${data.text_content || ""}</textarea>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group col-md-2">
+            <label>Taille</label>
+            <select class="form-control" name="font_size[]" onchange="updateFormData()">
+              <option ${data.font_size=="10" ? "selected" : ""}>10</option>
+              <option ${(!data.font_size || data.font_size=="12") ? "selected" : ""}>12</option>
+              <option ${data.font_size=="14" ? "selected" : ""}>14</option>
+              <option ${data.font_size=="16" ? "selected" : ""}>16</option>
+              <option ${data.font_size=="18" ? "selected" : ""}>18</option>
+              <option ${data.font_size=="20" ? "selected" : ""}>20</option>
+            </select>
+          </div>
+          
+          <div class="form-group col-md-2">
+            <label>Alignement</label>
+            <select class="form-control" name="alignment[]" onchange="updateFormData()">
+              <option value="left" ${data.alignment=="left" ? "selected" : ""}>Gauche</option>
+              <option value="center" ${(!data.alignment || data.alignment=="center") ? "selected" : ""}>Centré</option>
+              <option value="right" ${data.alignment=="right" ? "selected" : ""}>Droite</option>
+              <option value="justify" ${data.alignment=="justify" ? "selected" : ""}>Justifié</option>
+            </select>
+          </div>
+          
+          <div class="form-group col-md-2">
+            <label>Surligner</label>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="highlight[]" value="on" ${data.highlight==="on" ? "checked" : ""} onchange="updateFormData()">
+              <label class="form-check-label">Oui</label>
+            </div>
+          </div>
+          
+          <div class="form-group col-md-2">
+            <label>Couleur de surlignage</label>
+            <input type="color" class="form-control" name="highlight_color[]" value="${data.highlight_color || "#FFFF00"}" onchange="updateFormData()">
+          </div>
+          
+          <div class="form-group col-md-2">
+            <label>Gras</label>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="bold[]" value="on" ${data.bold==="on" ? "checked" : ""} onchange="updateFormData()">
+              <label class="form-check-label">Oui</label>
+            </div>
+          </div>
+          
+          <div class="form-group col-md-2">
+            <label>Italique</label>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="italic[]" value="on" ${data.italic==="on" ? "checked" : ""} onchange="updateFormData()">
+              <label class="form-check-label">Oui</label>
+            </div>
+          </div>
+          
+          <div class="form-group col-md-2">
+            <label>Souligner</label>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="underline[]" value="on" ${data.underline==="on" ? "checked" : ""} onchange="updateFormData()">
+              <label class="form-check-label">Oui</label>
+            </div>
+          </div>
+          
+          <div class="form-group col-md-2">
+            <label>Couleur du texte</label>
+            <input type="color" class="form-control" name="text_color[]" value="${data.text_color || "#000000"}" onchange="updateFormData()">
+          </div>
+        </div>
+      `;
+      container.appendChild(sectionDiv);
+      updateFormData();
+    }
+    
+    function addImageSection(data = {}) {
+      const container = document.getElementById("sectionsContainer");
+      const sectionDiv = document.createElement("div");
+      sectionDiv.className = "section";
+      let storedImg1 = data.stored_image1 || "";
+      let storedImg2 = data.stored_image2 || "";
+      let storedMsg = "";
+      if (storedImg1) {
+        storedMsg += `<p>Image 1 déjà uploadée: ${storedImg1}</p>`;
+      }
+      if (storedImg2) {
+        storedMsg += `<p>Image 2 déjà uploadée: ${storedImg2}</p>`;
+      }
+      sectionDiv.innerHTML = `
+        <button type="button" class="btn btn-sm btn-danger remove-btn" onclick="removeSection(this)">
+          <i class="bi bi-x-square"></i> Supprimer
+        </button>
+        <div class="section-header">Section Images</div>
+        <input type="hidden" name="section_type[]" value="images">
+        <input type="hidden" name="original[]" value="${data.original ? data.original : "false"}">
+        
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label>Image 1</label>
+            <input type="file" class="form-control-file" name="image1[]" accept="image/*" onchange="uploadImage(this)">
+            <input type="hidden" name="stored_image1[]" value="${storedImg1}">
+          </div>
+          <div class="form-group col-md-6">
+            <label>Image 2</label>
+            <input type="file" class="form-control-file" name="image2[]" accept="image/*" onchange="uploadImage(this)">
+            <input type="hidden" name="stored_image2[]" value="${storedImg2}">
+          </div>
+        </div>
+        ${storedMsg}
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label>Largeur des images (en pouces)</label>
+            <input type="number" step="0.1" class="form-control" name="image_width[]" value="${data.image_width || "2"}" onchange="updateFormData()">
+          </div>
+        </div>
+      `;
+      container.appendChild(sectionDiv);
+      updateFormData();
+    }
+    
+    function populateSections() {
+      const container = document.getElementById("sectionsContainer");
+      container.innerHTML = "";
+      let formData = [];
+      try {
+        formData = JSON.parse(document.getElementById("formDataField").value || "[]");
+      } catch (e) { formData = []; }
+      formData.forEach(section => {
+        if (section.type === "text") {
+          addTextSection(section);
+        } else if (section.type === "images") {
+          addImageSection(section);
+        }
+      });
+    }
+    
+    function updateFormData() {
+      let sectionsData = [];
+      let sectionElements = document.querySelectorAll("#sectionsContainer .section");
+      sectionElements.forEach(section => {
+        let secType = section.querySelector("input[name='section_type[]']").value;
+        let originalVal = section.querySelector("input[name='original[]']").value;
+        if (secType === "text") {
+          sectionsData.push({
+            type: "text",
+            text_content: section.querySelector("textarea[name='text_content[]']").value,
+            font_size: section.querySelector("select[name='font_size[]']").value,
+            alignment: section.querySelector("select[name='alignment[]']").value,
+            highlight: section.querySelector("input[name='highlight[]']").checked ? "on" : "off",
+            highlight_color: section.querySelector("input[name='highlight_color[]']").value,
+            bold: section.querySelector("input[name='bold[]']").checked ? "on" : "off",
+            italic: section.querySelector("input[name='italic[]']").checked ? "on" : "off",
+            underline: section.querySelector("input[name='underline[]']").checked ? "on" : "off",
+            text_color: section.querySelector("input[name='text_color[]']").value,
+            original: originalVal
+          });
+        } else if (secType === "images") {
+          sectionsData.push({
+            type: "images",
+            image_width: section.querySelector("input[name='image_width[]']").value,
+            stored_image1: section.querySelector("input[name='stored_image1[]']").value,
+            stored_image2: section.querySelector("input[name='stored_image2[]']").value,
+            original: originalVal
+          });
+        }
+      });
+      document.getElementById("formDataField").value = JSON.stringify(sectionsData);
+    }
+    
+    window.onload = function() {
+      populateSections();
+    };
+    
+    document.getElementById("reportForm").onsubmit = function() {
+      updateFormData();
+      return true;
+    };
+    
+    function uploadImage(inputElem) {
+      const file = inputElem.files[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append("file", file);
+      fetch("/upload", { method: "POST", body: formData })
+        .then(response => response.json())
+        .then(data => {
+          const hiddenInput = inputElem.parentElement.querySelector("input[type='hidden']");
+          hiddenInput.value = data.filename;
+          const sectionDiv = inputElem.closest(".section");
+          let msgElem = sectionDiv.querySelector(".upload-msg");
+          if (!msgElem) {
+            msgElem = document.createElement("p");
+            msgElem.className = "upload-msg text-success";
+            sectionDiv.appendChild(msgElem);
+          }
+          msgElem.innerHTML = `Image uploadée: ${data.filename}`;
+        })
+        .catch(error => console.error("Erreur lors de l'upload:", error));
+    }
+  </script>
+</body>
+</html>
