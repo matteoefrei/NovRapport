@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+novrapport_web/uploads/
+novrapport_web/docs/*.docx
+novrapport_web/opened_docs/*.docx
